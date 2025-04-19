@@ -1,0 +1,18 @@
+[package]
+name = "rust-job-server-config"
+description = "Simple Rust Job Server"
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+license = "MPL-2.0"
+homepage = "https://github.com/haytty/rust-job-server"
+repository = "https://github.com/haytty/rust-job-server.git"
+keywords = ["job", "server", "sqs", "aws"]
+categories = ["web-programming"]
+authors = ["haytty"]
+
+[dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
+getset = { version = "0.1.5", features = [] }
+toml = "0.8.20"
+thiserror = { version = "2.0.12", features = [] }

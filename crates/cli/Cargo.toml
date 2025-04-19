@@ -1,0 +1,29 @@
+[package]
+name = "rust-job-server-cli"
+description = "Simple Rust Job Server"
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+license = "MPL-2.0"
+homepage = "https://github.com/haytty/rust-job-server"
+repository = "https://github.com/haytty/rust-job-server.git"
+keywords = ["job", "server", "sqs", "aws"]
+categories = ["web-programming"]
+authors = ["haytty"]
+
+[[bin]]
+name = "rust-job-server-cli"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+rust-job-server-config = { path = "../config" }
+rust-job-server-di = { path = "../di" }
+anyhow = "1.0.98"
+clap = { version = "4.5.37", features = ["derive"] }
+clap_complete = { version = "4.5.47", features = [] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+toml = "0.8.20"
+tokio = { version = "1.44.2", features = ["full"] }
+shaku = { version = "0.6.2", features = ["derive"] }

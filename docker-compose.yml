@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  localstack:
+    build:
+      context: ./docker/localstack
+      dockerfile: Dockerfile
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs
+      - DEBUG=1
+    volumes:
+      - "./docker/localstack/init-queue.sh:/etc/localstack/init/ready.d/init-queue.sh"
