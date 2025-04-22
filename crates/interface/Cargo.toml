@@ -1,5 +1,5 @@
 [package]
-name = "rust-job-server-core"
+name = "rust-job-server-interface"
 description = "Simple Rust Job Server"
 version = "0.1.0"
 edition = "2021"
@@ -11,14 +11,14 @@ keywords = ["job", "server", "sqs", "aws"]
 categories = ["web-programming"]
 authors = ["haytty"]
 
-
 [dependencies]
 anyhow = "1.0.98"
 async-trait = "0.1.88"
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = { version = "1.0.140", features = ["default"] }
+tracing = "0.1.41"
+shaku = "0.6.2"
+rust-job-server-application = { path = "../application" }
 derive_more = { version = "2.0.1", features = ["full"] }
-url = { version = "2.5.4", features = ["serde"] }
-getset = { version = "0.1.5", features = [] }
-uuid = { version = "1.16.0", features = ["default", "v4", "serde"] }
+getset = "0.1.5"
 thiserror = "2.0.12"
+
+

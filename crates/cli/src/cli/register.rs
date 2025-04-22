@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Args, ValueHint};
 use rust_job_server_config::ConfigPath;
-use rust_job_server_di::DI;
+use rust_job_server_di::cli_container::CliContainer;
 
 #[derive(Debug, Args)]
 pub struct RegisterArgs {
@@ -22,8 +22,8 @@ pub async fn execute(serve_args: RegisterArgs) -> Result<()> {
     }
 
     let config = rust_job_server_config::load_config(serve_args)?;
-    let service = DI::register_service_build(config).await;
-    let a = service.run().await?;
+    let handlers = CliContainer::build_xxx_handler(config).await?;
+    // let a = handlers.run().await?;
 
     Ok(())
 }

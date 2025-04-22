@@ -13,14 +13,14 @@ authors = ["haytty"]
 
 
 [dependencies]
-rust-job-server-service = { path = "../service" }
+rust-job-server-application = { path = "../application" }
 rust-job-server-config = { path = "../config" }
-rust-job-server-infrastructure = { path = "../infrastracture" }
+rust-job-server-infrastructure = { path = "../infrastructure" }
+rust-job-server-interface = { path = "../interface" }
 shaku = { version = "0.6.2", features = ["derive"] }
 anyhow = "1.0.98"
 aws-sdk-sqs = { version = "1.64.0", features = ["default"] }
 aws-config = { version = "1.6.1", features = ["default"] }
 url = "2.5.4"
-
-
-
+thiserror = "2.0.12"
+uuid = { version = "1.16.0", features = ["v4"] }

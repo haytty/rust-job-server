@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Args, ValueHint};
 use rust_job_server_config::ConfigPath;
-use rust_job_server_di::DI;
+use rust_job_server_di::job_container::JobContainer;
 
 #[derive(Debug, Args)]
 pub struct ServerArgs {
@@ -22,8 +22,9 @@ pub async fn execute(server_args: ServerArgs) -> Result<()> {
     }
 
     let config = rust_job_server_config::load_config(server_args)?;
-    let service = DI::server_service_build(config).await;
-    service.run().await?;
+    let server = JobContainer::build_server(config).await?;
+
+    server.run().await?;
 
     Ok(())
 }

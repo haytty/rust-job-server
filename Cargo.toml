@@ -1,8 +1,11 @@
 [workspace]
 members = [
     "crates/cli",
-    "crates/config", "crates/core",
-    "crates/di", "crates/infrastracture",
-    "crates/service",
+    "crates/config",
+    "crates/core",
+    "crates/di",
+    "crates/infrastructure",
+    "crates/interface",
+    "crates/application",
 ]
 

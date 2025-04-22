@@ -1,2 +1,2 @@
-pub mod queue;
-pub mod value_object;
+pub mod model;
+mod value_object;
