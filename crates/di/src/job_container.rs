@@ -1,15 +1,18 @@
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_sqs::Client as AwsSqsClient;
 use rust_job_server_application::usecase::aggregation::aggregation_from_file_interactor::AggregationFromFileInteractor;
+use rust_job_server_application::usecase::user_export::user_export_from_file_interactor::UserExportFromFileInteractor;
 use rust_job_server_config::Config;
 use rust_job_server_infrastructure::job::queue::sqs_queue::SqsQueue;
 use rust_job_server_infrastructure::job::server::{
     BasicServer, Server, ServerBuilder, ServerBuilderError,
 };
 use rust_job_server_infrastructure::job::worker::aggregation_worker::AggregationWorker;
+use rust_job_server_infrastructure::job::worker::user_export_worker::UserExportWorker;
 use rust_job_server_infrastructure::job::worker::Worker;
 use rust_job_server_infrastructure::repository::file_user_repository::FileUserRepository;
 use rust_job_server_interface::job::handler::aggregation::aggregation_handler::AggregationHandler;
+use rust_job_server_interface::job::handler::user_export::user_export_handler::UserExportHandler;
 use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
@@ -22,8 +25,9 @@ impl JobContainer {
         let client = Self::build_sqs_client(config).await;
 
         let mut server_builder = ServerBuilder::new();
-        let server_builder =
-            server_builder.add_worker(Self::build_aggregation_worker(client.clone()).await?);
+        let server_builder = server_builder
+            .add_worker(Self::build_aggregation_worker(client.clone()).await?)
+            .add_worker(Self::build_user_export_worker(client.clone()).await?);
 
         server_builder
             .build()
@@ -53,6 +57,19 @@ impl JobContainer {
         let worker = AggregationWorker::new(
             sqs_queue,
             AggregationHandler::new(AggregationFromFileInteractor::new(FileUserRepository::new())),
+        );
+
+        Ok(Arc::new(worker))
+    }
+
+    async fn build_user_export_worker(
+        client: Arc<AwsSqsClient>,
+    ) -> Result<Arc<dyn Worker>, JobContainerError> {
+        let url = Self::fetch_sqs_queue_url(client.clone(), "user_export_queue").await?;
+        let sqs_queue = SqsQueue::new(url, client);
+        let worker = UserExportWorker::new(
+            sqs_queue,
+            UserExportHandler::new(UserExportFromFileInteractor::new(FileUserRepository::new())),
         );
 
         Ok(Arc::new(worker))

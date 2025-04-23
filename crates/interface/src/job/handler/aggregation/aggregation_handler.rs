@@ -49,7 +49,7 @@ where
 
 #[derive(Debug, Error)]
 pub enum AggregationHandlerError {
-    #[error("AggregationConvertInputError {0}")]   
+    #[error("AggregationConvertInputError {0}")]
     AggregationConvertInputError(AggregationInputError),
     #[error("AggregationUseCaseError {0}")]
     AggregationUseCaseError(AggregationError),

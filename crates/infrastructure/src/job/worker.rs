@@ -1,4 +1,5 @@
 pub mod aggregation_worker;
+pub mod user_export_worker;
 
 use crate::job::queue::sqs_queue::SqsQueueError;
 use crate::job::queue::Dequeueable;

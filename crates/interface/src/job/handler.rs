@@ -1,6 +1,7 @@
 use shaku::Interface;
 
 pub mod aggregation;
+pub mod user_export;
 
 pub trait HandlerError {}
 

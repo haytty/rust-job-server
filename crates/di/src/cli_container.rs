@@ -2,6 +2,7 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_sqs::Client as AwsSqsClient;
 use rust_job_server_config::Config;
 use rust_job_server_infrastructure::job::queue::dto::aggregation_dto::AggregationDto;
+use rust_job_server_infrastructure::job::queue::dto::user_export_dto::UserExportDto;
 use rust_job_server_infrastructure::job::queue::sqs_queue::SqsQueue;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -15,19 +16,30 @@ impl CliContainer {
     pub async fn build_xxx_handler(config: Config) -> Result<(), CliContainerError> {
         let client = Self::build_sqs_client(config).await;
 
-        let sqs_queue_url = Self::fetch_sqs_queue_url(client.clone(), "aggregation_queue").await?;
+        let aggregation_sqs_queue_url =
+            Self::fetch_sqs_queue_url(client.clone(), "aggregation_queue").await?;
+        let aggregation_sqs_queue = SqsQueue::new(aggregation_sqs_queue_url, client.clone());
 
-        let sqs_queue = SqsQueue::new(sqs_queue_url, client);
+        let user_export_sqs_queue_url =
+            Self::fetch_sqs_queue_url(client.clone(), "user_export_queue").await?;
+        let user_export_sqs_queue = SqsQueue::new(user_export_sqs_queue_url, client.clone());
 
         let a = Uuid::new_v4();
-        let dto = AggregationDto::new(a.to_string());
+        let aggregation_dto = AggregationDto::new(a.to_string());
+        let user_export_dto = UserExportDto::new(a.to_string());
 
-        let a = sqs_queue
-            .send(dto)
+        let a = aggregation_sqs_queue
+            .send(aggregation_dto)
+            .await
+            .map_err(|_| CliContainerError::SendMessageError)?;
+
+        let b = user_export_sqs_queue
+            .send(user_export_dto)
             .await
             .map_err(|_| CliContainerError::SendMessageError)?;
 
         println!("{:?}", a);
+        println!("{:?}", b);
         Ok(())
     }
 
