@@ -5,6 +5,7 @@ use thiserror::Error;
 
 #[derive(Debug, Constructor, Getters)]
 pub struct AggregationInput {
+    #[get = "pub"]
     user_id: UserId,
 }
 

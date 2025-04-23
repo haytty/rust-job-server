@@ -1,3 +1,4 @@
+use crate::queue::aggregation_queue::AggregationQueue;
 use crate::repository::user_repository::UserRepository;
 use crate::usecase::aggregation::aggregation_input::AggregationInput;
 use crate::usecase::aggregation::aggregation_output::AggregationOutput;
@@ -7,20 +8,26 @@ use getset::Getters;
 use tracing::info;
 
 #[derive(Debug, Constructor)]
-pub struct AggregationFromFileInteractor<R>
+pub struct AsyncAggregationInteractor<Q>
 where
-    R: UserRepository,
+    Q: AggregationQueue,
 {
-    repository: R,
+    queue: Q,
 }
 
 #[async_trait::async_trait]
-impl<R> AggregationUseCase for AggregationFromFileInteractor<R>
+impl<Q> AggregationUseCase for AsyncAggregationInteractor<Q>
 where
-    R: UserRepository,
+    Q: AggregationQueue,
 {
     async fn apply(&self, input: AggregationInput) -> Result<AggregationOutput, AggregationError> {
-        info!("Aggregation from file!!!");
+        let result = self
+            .queue
+            .send_message(input.user_id().to_owned())
+            .await
+            .map_err(|e| AggregationError::AggregationError)?;
+
+        info!("Enqueue Aggregation!!!");
 
         Ok(AggregationOutput::new())
     }

@@ -9,6 +9,7 @@ pub enum UserExportError {
     UserExportError,
 }
 
+#[async_trait::async_trait]
 pub trait UserExportUseCase: Interface {
-    fn apply(&self, input: UserExportInput) -> Result<UserExportOutput, UserExportError>;
+    async fn apply(&self, input: UserExportInput) -> Result<UserExportOutput, UserExportError>;
 }

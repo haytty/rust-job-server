@@ -1,49 +1,60 @@
 use aws_config::meta::region::RegionProviderChain;
 use aws_sdk_sqs::Client as AwsSqsClient;
+use rust_job_server_application::usecase::aggregation::async_aggregation_interactor::AsyncAggregationInteractor;
+use rust_job_server_application::usecase::user_export::async_user_export_interactor::AsyncUserExportInteractor;
 use rust_job_server_config::Config;
-use rust_job_server_infrastructure::job::queue::dto::aggregation_dto::AggregationDto;
-use rust_job_server_infrastructure::job::queue::dto::user_export_dto::UserExportDto;
-use rust_job_server_infrastructure::job::queue::sqs_queue::SqsQueue;
+use rust_job_server_infrastructure::job::queue::sqs::client::SqsClient;
+use rust_job_server_infrastructure::job::queue::sqs::sqs_aggregation_queue::SqsAggregationQueue;
+use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::SqsUserExportQueue;
+use rust_job_server_interface::cli::handler::aggregation::aggregation_handler::AggregationHandler;
+use rust_job_server_interface::cli::handler::user_export::user_export_handler::UserExportHandler;
 use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
 use url::Url;
-use uuid::Uuid;
 
 pub struct CliContainer {}
 
 impl CliContainer {
-    pub async fn build_xxx_handler(config: Config) -> Result<(), CliContainerError> {
-        let client = Self::build_sqs_client(config).await;
+    pub async fn build_aggregation_handler(
+        config: Config,
+    ) -> Result<
+        AggregationHandler<AsyncAggregationInteractor<SqsAggregationQueue>>,
+        CliContainerError,
+    > {
+        let client = Self::build_sqs_client(&config).await;
 
         let aggregation_sqs_queue_url =
             Self::fetch_sqs_queue_url(client.clone(), "aggregation_queue").await?;
-        let aggregation_sqs_queue = SqsQueue::new(aggregation_sqs_queue_url, client.clone());
+
+        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
+        let sqs_aggregation_queue = SqsAggregationQueue::new(aggregation_sqs_queue_url, sqs_client);
+
+        let aggregation_handler =
+            AggregationHandler::new(AsyncAggregationInteractor::new(sqs_aggregation_queue));
+
+        Ok(aggregation_handler)
+    }
+
+    pub async fn build_user_export_handler(
+        config: Config,
+    ) -> Result<UserExportHandler<AsyncUserExportInteractor<SqsUserExportQueue>>, CliContainerError>
+    {
+        let client = Self::build_sqs_client(&config).await;
 
         let user_export_sqs_queue_url =
             Self::fetch_sqs_queue_url(client.clone(), "user_export_queue").await?;
-        let user_export_sqs_queue = SqsQueue::new(user_export_sqs_queue_url, client.clone());
 
-        let a = Uuid::new_v4();
-        let aggregation_dto = AggregationDto::new(a.to_string());
-        let user_export_dto = UserExportDto::new(a.to_string());
+        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
+        let user_export_queue = SqsUserExportQueue::new(user_export_sqs_queue_url, sqs_client);
 
-        let a = aggregation_sqs_queue
-            .send(aggregation_dto)
-            .await
-            .map_err(|_| CliContainerError::SendMessageError)?;
+        let user_export_handler =
+            UserExportHandler::new(AsyncUserExportInteractor::new(user_export_queue));
 
-        let b = user_export_sqs_queue
-            .send(user_export_dto)
-            .await
-            .map_err(|_| CliContainerError::SendMessageError)?;
-
-        println!("{:?}", a);
-        println!("{:?}", b);
-        Ok(())
+        Ok(user_export_handler)
     }
 
-    async fn build_sqs_client(config: Config) -> Arc<AwsSqsClient> {
+    async fn build_sqs_client(config: &Config) -> Arc<AwsSqsClient> {
         let url = Url::from_str(config.queue().base_url()).expect("invalid url");
         let region_provider = RegionProviderChain::default_provider().or_else("ap-northeast-1");
 

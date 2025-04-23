@@ -1,12 +1,11 @@
-use shaku::Interface;
-
 pub mod aggregation;
 pub mod user_export;
 
 pub trait HandlerError {}
 
-pub trait Handler<I, O, E>: Interface + Send + Sync {
-    fn handle(&self, handle_input: I) -> Result<O, E>;
+#[async_trait::async_trait]
+pub trait Handler<I, O, E>: Send + Sync {
+    async fn handle(&self, handle_input: I) -> Result<O, E>;
 }
 
 pub trait HandleInput<UI, E>: Send + Sync {

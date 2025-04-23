@@ -3,7 +3,9 @@ use aws_sdk_sqs::Client as AwsSqsClient;
 use rust_job_server_application::usecase::aggregation::aggregation_from_file_interactor::AggregationFromFileInteractor;
 use rust_job_server_application::usecase::user_export::user_export_from_file_interactor::UserExportFromFileInteractor;
 use rust_job_server_config::Config;
-use rust_job_server_infrastructure::job::queue::sqs_queue::SqsQueue;
+use rust_job_server_infrastructure::job::queue::sqs::client::SqsClient;
+use rust_job_server_infrastructure::job::queue::sqs::sqs_aggregation_queue::SqsAggregationQueue;
+use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::SqsUserExportQueue;
 use rust_job_server_infrastructure::job::server::{
     BasicServer, Server, ServerBuilder, ServerBuilderError,
 };
@@ -22,19 +24,19 @@ pub struct JobContainer {}
 
 impl JobContainer {
     pub async fn build_server(config: Config) -> Result<Arc<dyn Server>, JobContainerError> {
-        let client = Self::build_sqs_client(config).await;
+        let client = Self::build_sqs_client(&config).await;
 
         let mut server_builder = ServerBuilder::new();
         let server_builder = server_builder
-            .add_worker(Self::build_aggregation_worker(client.clone()).await?)
-            .add_worker(Self::build_user_export_worker(client.clone()).await?);
+            .add_worker(Self::build_aggregation_worker(&config, client.clone()).await?)
+            .add_worker(Self::build_user_export_worker(&config, client.clone()).await?);
 
         server_builder
             .build()
             .map_err(JobContainerError::ServerBuilderError)
     }
 
-    async fn build_sqs_client(config: Config) -> Arc<AwsSqsClient> {
+    async fn build_sqs_client(config: &Config) -> Arc<AwsSqsClient> {
         let url = Url::from_str(config.queue().base_url()).expect("invalid url");
         let region_provider = RegionProviderChain::default_provider().or_else("ap-northeast-1");
 
@@ -50,12 +52,14 @@ impl JobContainer {
     }
 
     async fn build_aggregation_worker(
+        config: &Config,
         client: Arc<AwsSqsClient>,
     ) -> Result<Arc<dyn Worker>, JobContainerError> {
         let url = Self::fetch_sqs_queue_url(client.clone(), "aggregation_queue").await?;
-        let sqs_queue = SqsQueue::new(url, client);
+        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
+        let aggregation_queue = SqsAggregationQueue::new(url, sqs_client);
         let worker = AggregationWorker::new(
-            sqs_queue,
+            aggregation_queue,
             AggregationHandler::new(AggregationFromFileInteractor::new(FileUserRepository::new())),
         );
 
@@ -63,12 +67,14 @@ impl JobContainer {
     }
 
     async fn build_user_export_worker(
+        config: &Config,
         client: Arc<AwsSqsClient>,
     ) -> Result<Arc<dyn Worker>, JobContainerError> {
         let url = Self::fetch_sqs_queue_url(client.clone(), "user_export_queue").await?;
-        let sqs_queue = SqsQueue::new(url, client);
+        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
+        let user_export_queue = SqsUserExportQueue::new(url, sqs_client);
         let worker = UserExportWorker::new(
-            sqs_queue,
+            user_export_queue,
             UserExportHandler::new(UserExportFromFileInteractor::new(FileUserRepository::new())),
         );
 

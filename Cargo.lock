@@ -1770,10 +1770,11 @@ dependencies = [
  "derive_more",
  "getset",
  "rust-job-server-core",
+ "serde",
+ "serde_json",
  "shaku",
  "thiserror",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -1785,11 +1786,12 @@ dependencies = [
  "clap_complete",
  "rust-job-server-config",
  "rust-job-server-di",
- "shaku",
+ "rust-job-server-interface",
  "tokio",
  "toml",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

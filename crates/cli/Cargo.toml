@@ -19,6 +19,7 @@ doc = false
 [dependencies]
 rust-job-server-config = { path = "../config" }
 rust-job-server-di = { path = "../di" }
+rust-job-server-interface = { path = "../interface" }
 anyhow = "1.0.98"
 clap = { version = "4.5.37", features = ["derive"] }
 clap_complete = { version = "4.5.47", features = [] }
@@ -26,4 +27,4 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 toml = "0.8.20"
 tokio = { version = "1.44.2", features = ["full"] }
-shaku = { version = "0.6.2", features = ["derive"] }
+uuid = { version = "1.16.0", features = ["serde", "v4"] }

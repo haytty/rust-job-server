@@ -1,4 +1,5 @@
+pub mod aggregation;
 pub mod completion;
-pub mod server;
-pub mod register;
 pub mod root;
+pub mod server;
+pub mod user_export;

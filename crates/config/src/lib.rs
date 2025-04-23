@@ -20,6 +20,8 @@ pub struct Config {
 pub struct ConfigQueue {
     #[get = "pub"]
     base_url: String,
+    #[get = "pub"]
+    wait_time_seconds: i32,
 }
 
 #[derive(Debug, Serialize, Deserialize, Getters)]

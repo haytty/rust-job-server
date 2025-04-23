@@ -1,5 +1,5 @@
 use crate::model::plan::Plan;
-use derive_more::Constructor;
+use derive_more::{Constructor, Display};
 use getset::Getters;
 use thiserror::Error;
 use uuid::Uuid;
@@ -10,7 +10,7 @@ pub enum UserError {
     InvalidId(String),
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy, Display)]
 pub struct UserId(Uuid);
 
 impl UserId {
