@@ -5,7 +5,7 @@ use crate::factory::server_factory::{ServerModule, ServerModuleParameters};
 use crate::factory::user_export_worker_factory::{
     UserExportWorkerModule, UserExportWorkerModuleParameters,
 };
-use rust_job_server_application::queue::QueueType;
+use rust_job_server_application::queue::queue::QueueType;
 use rust_job_server_config::Config;
 use rust_job_server_infrastructure::job::queue::factory::sqs_client_factory::{
     SqsClientFactory, SqsClientFactoryError,

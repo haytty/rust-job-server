@@ -52,7 +52,6 @@ impl Worker for AggregationWorker {
                         .map_err(|e| WorkerError::QueueDeleteMessageError(e.to_string()))?;
                     info!("{}", "メッセージの処理が完了しました");
                 }
-
                 AggregationReceiveResult::NoMessage => {
                     info!("{}", "No message");
                 }

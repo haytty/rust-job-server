@@ -1,9 +1,10 @@
+use aws_sdk_sqs::error::SdkError;
 use aws_sdk_sqs::operation::delete_message::{DeleteMessageError, DeleteMessageOutput};
 use aws_sdk_sqs::operation::receive_message::ReceiveMessageError;
 use aws_sdk_sqs::operation::send_message::{SendMessageError, SendMessageOutput};
 use aws_sdk_sqs::Client as AwsSqsClient;
 use derive_more::Constructor;
-use rust_job_server_application::queue::{Dequeueable, Enqueueable};
+use rust_job_server_application::queue::queue::{Dequeueable, Enqueueable};
 use std::str::FromStr;
 use thiserror::Error;
 use url::Url;
@@ -108,10 +109,13 @@ impl SqsClient {
 
 #[derive(Debug, Error)]
 pub enum SqsClientError {
+    // JSON Error
     #[error("Json serialization error {0}")]
     JsonSerializationError(String),
     #[error("Json deserialization error {0}")]
     JsonDeserializationError(String),
+
+    //
     #[error("Send message error {0}")]
     SendMessageError(SendMessageError),
     #[error("Receive message error {0}")]

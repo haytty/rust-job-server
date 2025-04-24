@@ -2,6 +2,7 @@ use rust_job_server_interface::job::server::{Server, ServerError};
 use rust_job_server_interface::job::worker::Worker;
 use shaku::{Component, Interface};
 use std::sync::Arc;
+use std::time::Duration;
 
 #[derive(Component)]
 #[shaku(interface = Server)]
@@ -23,8 +24,9 @@ impl Server for BasicServer {
             tokio::spawn(async move {
                 loop {
                     if let Err(e) = worker.run().await {
-                        // エラーをログにだけ出して、止まらず再開
+                        // 500系のエラーが出たら2分待機してWorkerの処理を再開する
                         tracing::error!("worker error: {:?}", e);
+                        tokio::time::sleep(Duration::from_secs(120)).await;
                     }
                 }
             });

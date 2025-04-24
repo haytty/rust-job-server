@@ -4,17 +4,13 @@ use crate::factory::aggregation_handler_factory::{
 use crate::factory::user_export_handler_factory::{
     UserExportHandlerModule, UserExportHandlerModuleParameters,
 };
-use rust_job_server_application::queue::QueueType;
-use rust_job_server_application::usecase::user_export::async_user_export_interactor::{
-    AsyncUserExportInteractor,
-};
+use rust_job_server_application::queue::queue::QueueType;
+use rust_job_server_application::usecase::user_export::async_user_export_interactor::AsyncUserExportInteractor;
 use rust_job_server_config::Config;
 use rust_job_server_infrastructure::job::queue::factory::sqs_client_factory::{
     SqsClientFactory, SqsClientFactoryError,
 };
-use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::{
-    SqsUserExportQueue,
-};
+use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::SqsUserExportQueue;
 use rust_job_server_interface::cli::handler::aggregation::aggregation_handler::AggregationHandler;
 use rust_job_server_interface::cli::handler::user_export::user_export_handler::{
     UserExportHandler, UserExportHandlerImpl,
