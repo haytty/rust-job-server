@@ -1,10 +1,10 @@
-use crate::job::worker::{Worker, WorkerError};
 use rust_job_server_application::queue::user_export_queue::{
     UserExportQueue, UserExportReceiveResult,
 };
 use rust_job_server_interface::job::handler::user_export::user_export_handler::{
     UserExportHandleInput, UserExportHandler,
 };
+use rust_job_server_interface::job::worker::{Worker, WorkerError};
 use shaku::Component;
 use std::sync::Arc;
 use tracing::info;

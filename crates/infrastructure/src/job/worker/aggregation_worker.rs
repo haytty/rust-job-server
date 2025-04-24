@@ -1,10 +1,10 @@
-use crate::job::worker::{Worker, WorkerError};
 use rust_job_server_application::queue::aggregation_queue::{
     AggregationQueue, AggregationReceiveResult,
 };
 use rust_job_server_interface::job::handler::aggregation::aggregation_handler::{
     AggregationHandleInput, AggregationHandler,
 };
+use rust_job_server_interface::job::worker::{Worker, WorkerError};
 use shaku::Component;
 use std::sync::Arc;
 use tracing::info;

@@ -1,12 +1,7 @@
-use crate::job::worker::{Worker, WorkerError};
+use rust_job_server_interface::job::server::{Server, ServerError};
+use rust_job_server_interface::job::worker::Worker;
 use shaku::{Component, Interface};
 use std::sync::Arc;
-use thiserror::Error;
-
-#[async_trait::async_trait]
-pub trait Server: Interface {
-    async fn run(&self) -> Result<(), ServerError>;
-}
 
 #[derive(Component)]
 #[shaku(interface = Server)]
@@ -39,10 +34,4 @@ impl Server for BasicServer {
         futures::future::pending::<()>().await;
         Ok(())
     }
-}
-
-#[derive(Debug, Error)]
-pub enum ServerError {
-    #[error("worker failed: {0}")]
-    WorkerFailed(#[from] WorkerError),
 }
