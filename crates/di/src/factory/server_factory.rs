@@ -1,5 +1,5 @@
 use rust_job_server_infrastructure::job::server::{BasicServer, BasicServerParameters};
-use rust_job_server_infrastructure::job::worker::Worker;
+use rust_job_server_interface::job::worker::Worker;
 use shaku::module;
 use std::sync::Arc;
 

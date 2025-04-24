@@ -11,8 +11,8 @@ use rust_job_server_infrastructure::job::queue::factory::sqs_client_factory::{
     SqsClientFactory, SqsClientFactoryError,
 };
 use rust_job_server_infrastructure::job::queue::sqs::client::SqsClient;
-use rust_job_server_infrastructure::job::server::Server;
-use rust_job_server_infrastructure::job::worker::Worker;
+use rust_job_server_interface::job::server::Server;
+use rust_job_server_interface::job::worker::Worker;
 use shaku::HasComponent;
 use std::sync::Arc;
 use thiserror::Error;
