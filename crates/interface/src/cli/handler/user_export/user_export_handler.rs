@@ -1,4 +1,3 @@
-use crate::cli::handler::{HandleInput, HandleOutput, Handler, HandlerError};
 use derive_more::Constructor;
 use getset::Getters;
 use rust_job_server_application::usecase::user_export::user_export_input::{
@@ -6,26 +5,30 @@ use rust_job_server_application::usecase::user_export::user_export_input::{
 };
 use rust_job_server_application::usecase::user_export::user_export_output::UserExportOutput;
 use rust_job_server_application::usecase::user_export::user_export_usecase::{
-    UserExportError, UserExportUseCase,
+    UserExportUseCase, UserExportUseCaseError,
 };
-
+use shaku::{Component, Interface};
+use std::sync::Arc;
 use thiserror::Error;
 use tracing::info;
 
-#[derive(Debug, Constructor, Getters)]
-pub struct UserExportHandler<U>
-where
-    U: UserExportUseCase,
-{
-    use_case: U,
+#[async_trait::async_trait]
+pub trait UserExportHandler: Interface + Send + Sync {
+    async fn handle(
+        &self,
+        handle_input: UserExportHandleInput,
+    ) -> Result<UserExportHandleOutput, UserExportHandlerError>;
+}
+
+#[derive(Debug, Constructor, Getters, Component)]
+#[shaku(interface = UserExportHandler)]
+pub struct UserExportHandlerImpl {
+    #[shaku(inject)]
+    use_case: Arc<dyn UserExportUseCase>,
 }
 
 #[async_trait::async_trait]
-impl<U> Handler<UserExportHandleInput, UserExportHandleOutput, UserExportHandlerError>
-    for UserExportHandler<U>
-where
-    U: UserExportUseCase,
-{
+impl UserExportHandler for UserExportHandlerImpl {
     async fn handle(
         &self,
         handle_input: UserExportHandleInput,
@@ -34,15 +37,15 @@ where
             .to_use_case_input()
             .map_err(UserExportHandlerError::UserExportConvertInputError)?;
 
-        let user_export_output = self
+        let aggregation_output = self
             .use_case
             .apply(use_case_input)
             .await
             .map_err(UserExportHandlerError::UserExportUseCaseError)?;
 
-        info!("UserExportHandler: handling user_export input...");
+        info!("UserExportHandler: handling aggregation input...");
 
-        let output = UserExportHandleOutput::from_use_case_output(user_export_output)
+        let output = UserExportHandleOutput::from_use_case_output(aggregation_output)
             .map_err(|_| UserExportHandlerError::UserExportConvertOutputError)?;
 
         Ok(output)
@@ -54,19 +57,15 @@ pub enum UserExportHandlerError {
     #[error("UserExportConvertInputError {0}")]
     UserExportConvertInputError(UserExportInputError),
     #[error("UserExportUseCaseError {0}")]
-    UserExportUseCaseError(UserExportError),
+    UserExportUseCaseError(UserExportUseCaseError),
     #[error("UserExportConvertOutputError")]
     UserExportConvertOutputError,
 }
 
-impl HandlerError for UserExportHandlerError {}
-
 #[derive(Debug, Constructor, Getters)]
 pub struct UserExportHandleOutput {}
 
-impl UserExportHandleOutput {}
-
-impl HandleOutput<UserExportOutput, UserExportHandlerError> for UserExportHandleOutput {
+impl UserExportHandleOutput {
     fn from_use_case_output(
         use_case_output: UserExportOutput,
     ) -> Result<Self, UserExportHandlerError> {
@@ -80,7 +79,7 @@ pub struct UserExportHandleInput {
     user_id: String,
 }
 
-impl HandleInput<UserExportInput, UserExportInputError> for UserExportHandleInput {
+impl UserExportHandleInput {
     fn to_use_case_input(self) -> Result<UserExportInput, UserExportInputError> {
         UserExportInput::from_user_id_string(self.user_id)
     }

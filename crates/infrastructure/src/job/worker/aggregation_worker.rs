@@ -1,39 +1,31 @@
-use crate::job::queue::dto::aggregation_dto::AggregationDto;
 use crate::job::worker::{Worker, WorkerError};
 use rust_job_server_application::queue::aggregation_queue::{
     AggregationQueue, AggregationReceiveResult,
 };
 use rust_job_server_interface::job::handler::aggregation::aggregation_handler::{
-    AggregationHandleInput, AggregationHandleOutput, AggregationHandlerError,
+    AggregationHandleInput, AggregationHandler,
 };
-use rust_job_server_interface::job::handler::Handler;
+use shaku::Component;
+use std::sync::Arc;
 use tracing::info;
 
-pub struct AggregationWorker<Q, H>
-where
-    Q: AggregationQueue,
-    H: Handler<AggregationHandleInput, AggregationHandleOutput, AggregationHandlerError>,
-{
-    queue: Q,
-    handler: H,
+#[derive(Debug, Component)]
+#[shaku(interface = Worker)]
+pub struct AggregationWorker {
+    #[shaku(inject)]
+    queue: Arc<dyn AggregationQueue>,
+    #[shaku(inject)]
+    handler: Arc<dyn AggregationHandler>,
 }
 
-impl<Q, H> AggregationWorker<Q, H>
-where
-    Q: AggregationQueue,
-    H: Handler<AggregationHandleInput, AggregationHandleOutput, AggregationHandlerError>,
-{
-    pub fn new(queue: Q, handler: H) -> Self {
+impl AggregationWorker {
+    pub fn new(queue: Arc<dyn AggregationQueue>, handler: Arc<dyn AggregationHandler>) -> Self {
         Self { queue, handler }
     }
 }
 
 #[async_trait::async_trait]
-impl<Q, H> Worker for AggregationWorker<Q, H>
-where
-    Q: AggregationQueue,
-    H: Handler<AggregationHandleInput, AggregationHandleOutput, AggregationHandlerError>,
-{
+impl Worker for AggregationWorker {
     async fn run(&self) -> Result<(), WorkerError> {
         loop {
             let result = self

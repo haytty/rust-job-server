@@ -1,39 +1,31 @@
-use crate::job::queue::dto::user_export_dto::UserExportDto;
 use crate::job::worker::{Worker, WorkerError};
 use rust_job_server_application::queue::user_export_queue::{
     UserExportQueue, UserExportReceiveResult,
 };
 use rust_job_server_interface::job::handler::user_export::user_export_handler::{
-    UserExportHandleInput, UserExportHandleOutput, UserExportHandlerError,
+    UserExportHandleInput, UserExportHandler,
 };
-use rust_job_server_interface::job::handler::Handler;
+use shaku::Component;
+use std::sync::Arc;
 use tracing::info;
 
-pub struct UserExportWorker<Q, H>
-where
-    Q: UserExportQueue,
-    H: Handler<UserExportHandleInput, UserExportHandleOutput, UserExportHandlerError>,
-{
-    queue: Q,
-    handler: H,
+#[derive(Debug, Component)]
+#[shaku(interface = Worker)]
+pub struct UserExportWorker {
+    #[shaku(inject)]
+    queue: Arc<dyn UserExportQueue>,
+    #[shaku(inject)]
+    handler: Arc<dyn UserExportHandler>,
 }
 
-impl<Q, H> UserExportWorker<Q, H>
-where
-    Q: UserExportQueue,
-    H: Handler<UserExportHandleInput, UserExportHandleOutput, UserExportHandlerError>,
-{
-    pub fn new(queue: Q, handler: H) -> Self {
+impl UserExportWorker {
+    pub fn new(queue: Arc<dyn UserExportQueue>, handler: Arc<dyn UserExportHandler>) -> Self {
         Self { queue, handler }
     }
 }
 
 #[async_trait::async_trait]
-impl<Q, H> Worker for UserExportWorker<Q, H>
-where
-    Q: UserExportQueue,
-    H: Handler<UserExportHandleInput, UserExportHandleOutput, UserExportHandlerError>,
-{
+impl Worker for UserExportWorker {
     async fn run(&self) -> Result<(), WorkerError> {
         loop {
             let result = self

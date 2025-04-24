@@ -1,4 +1,3 @@
-use crate::cli::handler::{HandleInput, HandleOutput, Handler, HandlerError};
 use derive_more::Constructor;
 use getset::Getters;
 use rust_job_server_application::usecase::aggregation::aggregation_input::{
@@ -6,26 +5,31 @@ use rust_job_server_application::usecase::aggregation::aggregation_input::{
 };
 use rust_job_server_application::usecase::aggregation::aggregation_output::AggregationOutput;
 use rust_job_server_application::usecase::aggregation::aggregation_usecase::{
-    AggregationError, AggregationUseCase,
+    AggregationUseCase, AggregationUseCaseError,
 };
+use shaku::{Component, Interface};
+use std::sync::Arc;
 
 use thiserror::Error;
 use tracing::info;
 
-#[derive(Debug, Constructor, Getters)]
-pub struct AggregationHandler<U>
-where
-    U: AggregationUseCase,
-{
-    use_case: U,
+#[async_trait::async_trait]
+pub trait AggregationHandler: Interface + Send + Sync {
+    async fn handle(
+        &self,
+        handle_input: AggregationHandleInput,
+    ) -> Result<AggregationHandleOutput, AggregationHandlerError>;
+}
+
+#[derive(Debug, Constructor, Getters, Component)]
+#[shaku(interface = AggregationHandler)]
+pub struct AggregationHandlerImpl {
+    #[shaku(inject)]
+    use_case: Arc<dyn AggregationUseCase>,
 }
 
 #[async_trait::async_trait]
-impl<U> Handler<AggregationHandleInput, AggregationHandleOutput, AggregationHandlerError>
-    for AggregationHandler<U>
-where
-    U: AggregationUseCase,
-{
+impl AggregationHandler for AggregationHandlerImpl {
     async fn handle(
         &self,
         handle_input: AggregationHandleInput,
@@ -54,19 +58,15 @@ pub enum AggregationHandlerError {
     #[error("AggregationConvertInputError {0}")]
     AggregationConvertInputError(AggregationInputError),
     #[error("AggregationUseCaseError {0}")]
-    AggregationUseCaseError(AggregationError),
+    AggregationUseCaseError(AggregationUseCaseError),
     #[error("AggregationConvertOutputError")]
     AggregationConvertOutputError,
 }
 
-impl HandlerError for AggregationHandlerError {}
-
 #[derive(Debug, Constructor, Getters)]
 pub struct AggregationHandleOutput {}
 
-impl AggregationHandleOutput {}
-
-impl HandleOutput<AggregationOutput, AggregationHandlerError> for AggregationHandleOutput {
+impl AggregationHandleOutput {
     fn from_use_case_output(
         use_case_output: AggregationOutput,
     ) -> Result<Self, AggregationHandlerError> {
@@ -80,7 +80,7 @@ pub struct AggregationHandleInput {
     user_id: String,
 }
 
-impl HandleInput<AggregationInput, AggregationInputError> for AggregationHandleInput {
+impl AggregationHandleInput {
     fn to_use_case_input(self) -> Result<AggregationInput, AggregationInputError> {
         AggregationInput::from_user_id_string(self.user_id)
     }

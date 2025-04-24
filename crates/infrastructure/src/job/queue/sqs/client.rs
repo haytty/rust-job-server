@@ -4,7 +4,7 @@ use aws_sdk_sqs::operation::send_message::{SendMessageError, SendMessageOutput};
 use aws_sdk_sqs::Client as AwsSqsClient;
 use derive_more::Constructor;
 use rust_job_server_application::queue::{Dequeueable, Enqueueable};
-use std::sync::Arc;
+use std::str::FromStr;
 use thiserror::Error;
 use url::Url;
 
@@ -12,7 +12,7 @@ pub type ReceiptHandle = String;
 
 #[derive(Debug, Constructor)]
 pub struct SqsClient {
-    client: Arc<AwsSqsClient>,
+    client: AwsSqsClient,
     max_number_of_messages: i32,
     wait_time_seconds: i32,
 }
@@ -87,6 +87,23 @@ impl SqsClient {
 
         Ok(output)
     }
+
+    pub async fn get_queue_url(&self, queue_name: &str) -> Result<Url, SqsClientError> {
+        let output = self
+            .client
+            .get_queue_url()
+            .queue_name(queue_name)
+            .send()
+            .await
+            .map_err(|_| SqsClientError::GetQueueUrlError)?;
+
+        let queue_url = output.queue_url.ok_or(SqsClientError::GetQueueUrlError)?;
+
+        let url =
+            Url::from_str(queue_url.as_str()).map_err(|_| SqsClientError::ParseQueueUrlError)?;
+
+        Ok(url)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -103,4 +120,8 @@ pub enum SqsClientError {
     DeleteMessageError(DeleteMessageError),
     #[error("Receipt handler missing")]
     ReceiptHandlerMissing,
+    #[error("GetQueueUrlError")]
+    GetQueueUrlError,
+    #[error("ParseQueueUrlError")]
+    ParseQueueUrlError,
 }

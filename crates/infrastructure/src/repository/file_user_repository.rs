@@ -3,8 +3,10 @@ use rust_job_server_application::repository::user_repository::{
     UserRepository, UserRepositoryError,
 };
 use rust_job_server_core::model::user::{User, UserId};
+use shaku::Component;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, Constructor, Component)]
+#[shaku(interface = UserRepository)]
 pub struct FileUserRepository {}
 
 impl UserRepository for FileUserRepository {

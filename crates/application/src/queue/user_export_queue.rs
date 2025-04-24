@@ -1,6 +1,7 @@
 use derive_more::{Constructor, Display};
 use getset::Getters;
 use rust_job_server_core::model::user::UserId;
+use shaku::Interface;
 use std::fmt::Debug;
 use thiserror::Error;
 
@@ -35,7 +36,7 @@ pub struct UserExportReceiveResultReceived {
 pub struct UserExportDeleteResult {}
 
 #[async_trait::async_trait]
-pub trait UserExportQueue: Send + Sync + 'static {
+pub trait UserExportQueue: Interface + Send + Sync + 'static + Debug {
     async fn send_message(
         &self,
         enqueueable: UserId,

@@ -9,3 +9,6 @@ wait_time_seconds = 20
 
 read_timeout = 20
 
+[aws]
+
+region = "ap-northeast-1"

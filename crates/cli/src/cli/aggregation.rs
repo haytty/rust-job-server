@@ -3,7 +3,6 @@ use clap::{Args, ValueHint};
 use rust_job_server_config::ConfigPath;
 use rust_job_server_di::cli_container::CliContainer;
 use rust_job_server_interface::cli::handler::aggregation::aggregation_handler::AggregationHandleInput;
-use rust_job_server_interface::cli::handler::Handler;
 use uuid::Uuid;
 
 #[derive(Debug, Args)]
@@ -29,7 +28,7 @@ pub async fn execute(aggregation_args: AggregationArgs) -> Result<()> {
     let uuid = Uuid::new_v4();
     let input = AggregationHandleInput::new(uuid.to_string());
 
-    let a = handlers.handle(input).await?;
+    let _a = handlers.handle(input).await?;
 
     Ok(())
 }

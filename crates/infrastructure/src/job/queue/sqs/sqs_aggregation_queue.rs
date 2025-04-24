@@ -6,14 +6,16 @@ use rust_job_server_application::queue::aggregation_queue::{
     AggregationReceiveResultReceived, AggregationSendResult,
 };
 use rust_job_server_core::model::user::UserId;
+use shaku::Component;
 use std::fmt::Debug;
 use std::sync::Arc;
 use url::Url;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, Constructor, Component)]
+#[shaku(interface = AggregationQueue)]
 pub struct SqsAggregationQueue {
     url: Url,
-    client: SqsClient,
+    client: Arc<SqsClient>,
 }
 
 #[async_trait::async_trait]

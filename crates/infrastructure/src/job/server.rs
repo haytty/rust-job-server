@@ -1,14 +1,7 @@
 use crate::job::worker::{Worker, WorkerError};
-use shaku::{module, Component, HasComponent, Interface};
+use shaku::{Component, Interface};
 use std::sync::Arc;
 use thiserror::Error;
-
-module! {
-    pub ServerModule {
-        components = [BasicServer],
-        providers = []
-    }
-}
 
 #[async_trait::async_trait]
 pub trait Server: Interface {
@@ -53,37 +46,3 @@ pub enum ServerError {
     #[error("worker failed: {0}")]
     WorkerFailed(#[from] WorkerError),
 }
-
-pub struct ServerBuilder {
-    workers: Vec<Arc<dyn Worker>>,
-}
-
-impl ServerBuilder {
-    pub fn new() -> Self {
-        Self { workers: vec![] }
-    }
-}
-
-impl ServerBuilder {
-    pub fn add_worker(mut self, worker: Arc<dyn Worker>) -> Self {
-        self.workers.push(worker);
-        self
-    }
-
-    pub fn build(self) -> Result<Arc<dyn Server>, ServerBuilderError> {
-        let mut server_module_builder = ServerModule::builder();
-
-        let server_module_builder =
-            server_module_builder.with_component_parameters::<BasicServer>(BasicServerParameters {
-                workers: self.workers,
-            });
-
-        let module = server_module_builder.build();
-        let server: Arc<dyn Server> = module.resolve();
-
-        Ok(server)
-    }
-}
-
-#[derive(Debug, Error)]
-pub enum ServerBuilderError {}

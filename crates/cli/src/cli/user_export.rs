@@ -4,7 +4,7 @@ use rust_job_server_config::ConfigPath;
 use rust_job_server_di::cli_container::CliContainer;
 use rust_job_server_interface::cli::handler::user_export::user_export_handler::UserExportHandleInput;
 use uuid::Uuid;
-use rust_job_server_interface::cli::handler::Handler;
+// use rust_job_server_interface::cli::handler::Handler;
 
 #[derive(Debug, Args)]
 pub struct UserExportArgs {
@@ -28,7 +28,7 @@ pub async fn execute(user_export_args: UserExportArgs) -> Result<()> {
     let handlers = CliContainer::build_user_export_handler(config).await?;
     let uuid = Uuid::new_v4();
     let input = UserExportHandleInput::new(uuid.to_string());
-    let a = handlers.handle(input).await?;
+    let _a = handlers.handle(input).await?;
 
     Ok(())
 }

@@ -1,31 +1,32 @@
 use crate::queue::aggregation_queue::AggregationQueue;
-use crate::repository::user_repository::UserRepository;
 use crate::usecase::aggregation::aggregation_input::AggregationInput;
 use crate::usecase::aggregation::aggregation_output::AggregationOutput;
-use crate::usecase::aggregation::aggregation_usecase::{AggregationError, AggregationUseCase};
+use crate::usecase::aggregation::aggregation_usecase::{
+    AggregationUseCase, AggregationUseCaseError,
+};
 use derive_more::Constructor;
-use getset::Getters;
+use shaku::Component;
+use std::sync::Arc;
 use tracing::info;
 
-#[derive(Debug, Constructor)]
-pub struct AsyncAggregationInteractor<Q>
-where
-    Q: AggregationQueue,
-{
-    queue: Q,
+#[derive(Debug, Constructor, Component)]
+#[shaku(interface = AggregationUseCase)]
+pub struct AsyncAggregationInteractor {
+    #[shaku(inject)]
+    queue: Arc<dyn AggregationQueue>,
 }
 
 #[async_trait::async_trait]
-impl<Q> AggregationUseCase for AsyncAggregationInteractor<Q>
-where
-    Q: AggregationQueue,
-{
-    async fn apply(&self, input: AggregationInput) -> Result<AggregationOutput, AggregationError> {
+impl AggregationUseCase for AsyncAggregationInteractor {
+    async fn apply(
+        &self,
+        input: AggregationInput,
+    ) -> Result<AggregationOutput, AggregationUseCaseError> {
         let result = self
             .queue
             .send_message(input.user_id().to_owned())
             .await
-            .map_err(|e| AggregationError::AggregationError)?;
+            .map_err(|e| AggregationUseCaseError::AggregationError)?;
 
         info!("Enqueue Aggregation!!!");
 

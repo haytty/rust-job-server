@@ -6,14 +6,16 @@ use rust_job_server_application::queue::user_export_queue::{
     UserExportReceiveResultReceived, UserExportSendResult,
 };
 use rust_job_server_core::model::user::UserId;
+use shaku::Component;
 use std::fmt::Debug;
 use std::sync::Arc;
 use url::Url;
 
-#[derive(Debug, Constructor)]
+#[derive(Debug, Constructor, Component)]
+#[shaku(interface = UserExportQueue)]
 pub struct SqsUserExportQueue {
     url: Url,
-    client: SqsClient,
+    client: Arc<SqsClient>,
 }
 
 #[async_trait::async_trait]

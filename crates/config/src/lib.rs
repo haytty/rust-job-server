@@ -13,6 +13,8 @@ pub struct Config {
     queue: ConfigQueue,
     #[get = "pub"]
     server: ConfigServer,
+    #[get = "pub"]
+    aws: ConfigAws,
 }
 
 #[derive(Debug, Serialize, Deserialize, Getters)]
@@ -29,6 +31,13 @@ pub struct ConfigQueue {
 pub struct ConfigServer {
     #[get = "pub"]
     read_timeout: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Getters)]
+#[serde(rename = "aws")]
+pub struct ConfigAws {
+    #[get = "pub"]
+    region: String,
 }
 
 #[derive(Debug, Error)]

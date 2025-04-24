@@ -1,102 +1,107 @@
-use aws_config::meta::region::RegionProviderChain;
-use aws_sdk_sqs::Client as AwsSqsClient;
-use rust_job_server_application::usecase::aggregation::async_aggregation_interactor::AsyncAggregationInteractor;
-use rust_job_server_application::usecase::user_export::async_user_export_interactor::AsyncUserExportInteractor;
+use crate::factory::aggregation_handler_factory::{
+    AggregationHandlerModule, AggregationHandlerModuleParameters,
+};
+use crate::factory::user_export_handler_factory::{
+    UserExportHandlerModule, UserExportHandlerModuleParameters,
+};
+use rust_job_server_application::queue::QueueType;
+use rust_job_server_application::usecase::user_export::async_user_export_interactor::{
+    AsyncUserExportInteractor,
+};
 use rust_job_server_config::Config;
-use rust_job_server_infrastructure::job::queue::sqs::client::SqsClient;
-use rust_job_server_infrastructure::job::queue::sqs::sqs_aggregation_queue::SqsAggregationQueue;
-use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::SqsUserExportQueue;
+use rust_job_server_infrastructure::job::queue::factory::sqs_client_factory::{
+    SqsClientFactory, SqsClientFactoryError,
+};
+use rust_job_server_infrastructure::job::queue::sqs::sqs_user_export_queue::{
+    SqsUserExportQueue,
+};
 use rust_job_server_interface::cli::handler::aggregation::aggregation_handler::AggregationHandler;
-use rust_job_server_interface::cli::handler::user_export::user_export_handler::UserExportHandler;
-use std::str::FromStr;
+use rust_job_server_interface::cli::handler::user_export::user_export_handler::{
+    UserExportHandler, UserExportHandlerImpl,
+};
+use shaku::{module, HasComponent};
 use std::sync::Arc;
 use thiserror::Error;
-use url::Url;
 
 pub struct CliContainer {}
+
+module! {
+    pub UserExportModule {
+        components = [
+            SqsUserExportQueue,
+            UserExportHandlerImpl,
+            AsyncUserExportInteractor,
+        ],
+        providers = []
+    }
+}
 
 impl CliContainer {
     pub async fn build_aggregation_handler(
         config: Config,
-    ) -> Result<
-        AggregationHandler<AsyncAggregationInteractor<SqsAggregationQueue>>,
-        CliContainerError,
-    > {
-        let client = Self::build_sqs_client(&config).await;
+    ) -> Result<Arc<dyn AggregationHandler>, CliContainerError> {
+        let factory = SqsClientFactory::new(
+            config.queue().base_url().to_string(),
+            config.aws().region().to_string(),
+            *config.queue().wait_time_seconds(),
+        );
 
-        let aggregation_sqs_queue_url =
-            Self::fetch_sqs_queue_url(client.clone(), "aggregation_queue").await?;
+        let sqs_client = factory
+            .build()
+            .await
+            .map_err(CliContainerError::BuildQueueClientError)?;
 
-        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
-        let sqs_aggregation_queue = SqsAggregationQueue::new(aggregation_sqs_queue_url, sqs_client);
+        let sqs_client = Arc::new(sqs_client);
 
-        let aggregation_handler =
-            AggregationHandler::new(AsyncAggregationInteractor::new(sqs_aggregation_queue));
+        let url = sqs_client
+            .get_queue_url(&QueueType::Aggregation.queue_name())
+            .await
+            .map_err(|_| CliContainerError::FetchQueueUrlError)?;
 
-        Ok(aggregation_handler)
+        let parameters = AggregationHandlerModuleParameters::new(url, sqs_client);
+
+        // モジュールを構築
+        let module = AggregationHandlerModule::factory(parameters);
+
+        Ok(module.resolve())
     }
 
     pub async fn build_user_export_handler(
         config: Config,
-    ) -> Result<UserExportHandler<AsyncUserExportInteractor<SqsUserExportQueue>>, CliContainerError>
-    {
-        let client = Self::build_sqs_client(&config).await;
-
-        let user_export_sqs_queue_url =
-            Self::fetch_sqs_queue_url(client.clone(), "user_export_queue").await?;
-
-        let sqs_client = SqsClient::new(client, 1, *config.queue().wait_time_seconds());
-        let user_export_queue = SqsUserExportQueue::new(user_export_sqs_queue_url, sqs_client);
-
-        let user_export_handler =
-            UserExportHandler::new(AsyncUserExportInteractor::new(user_export_queue));
-
-        Ok(user_export_handler)
-    }
-
-    async fn build_sqs_client(config: &Config) -> Arc<AwsSqsClient> {
-        let url = Url::from_str(config.queue().base_url()).expect("invalid url");
-        let region_provider = RegionProviderChain::default_provider().or_else("ap-northeast-1");
-
-        let config = aws_config::from_env().region(region_provider).load().await;
-
-        let client = AwsSqsClient::from_conf(
-            aws_sdk_sqs::config::Builder::from(&config)
-                .endpoint_url(url.as_str())
-                .build(),
+    ) -> Result<Arc<dyn UserExportHandler>, CliContainerError> {
+        let factory = SqsClientFactory::new(
+            config.queue().base_url().to_string(),
+            config.aws().region().to_string(),
+            *config.queue().wait_time_seconds(),
         );
 
-        Arc::new(client)
-    }
-
-    async fn fetch_sqs_queue_url(
-        client: Arc<AwsSqsClient>,
-        queue_name: &str,
-    ) -> Result<Url, CliContainerError> {
-        let output = client
-            .get_queue_url()
-            .queue_name(queue_name)
-            .send()
+        let sqs_client = factory
+            .build()
             .await
-            .map_err(|_| CliContainerError::GetQueueUrlError)?;
+            .map_err(CliContainerError::BuildQueueClientError)?;
 
-        let queue_url = output
-            .queue_url
-            .ok_or(CliContainerError::GetQueueUrlError)?;
+        let sqs_client = Arc::new(sqs_client);
 
-        let url =
-            Url::from_str(queue_url.as_str()).map_err(|_| CliContainerError::ParseQueueUrlError)?;
+        let url = sqs_client
+            .get_queue_url(&QueueType::UserExport.queue_name())
+            .await
+            .map_err(|_| CliContainerError::FetchQueueUrlError)?;
 
-        Ok(url)
+        let parameters = UserExportHandlerModuleParameters::new(url, sqs_client);
+
+        // モジュールを構築
+        let module = UserExportHandlerModule::factory(parameters);
+
+        Ok(module.resolve())
     }
 }
 
 #[derive(Debug, Error)]
 pub enum CliContainerError {
-    #[error("GetQueueUrlError")]
-    GetQueueUrlError,
-    #[error("ParseQueueUrlError")]
-    ParseQueueUrlError,
+    #[error("BuildQueueClientError {0}")]
+    BuildQueueClientError(SqsClientFactoryError),
+    #[error("FetchQueueUrlError")]
+    FetchQueueUrlError,
     #[error("SendMessageError")]
     SendMessageError,
 }
